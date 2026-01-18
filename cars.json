@@ -1,0 +1,69 @@
+[
+  {
+    "id": "2",
+    "name": "Ford Mustang Gt Covertible",
+    "tagline": "",
+    "description": "",
+    "basePrice": "$80/DAY",
+    "gear": "10",
+    "gearType": "Automatic",
+    "topSpeed": "250 km/h",
+    "seats": "4",
+    "titleImage": "https://ik.imagekit.io/hamknight/cars/FORD_MUSTANG_GT/0A7DDDE6-2CAE-4CB3-B14F-6CD3B264C1B9_1_105_c.jpeg",
+    "titleVideo": "",
+    "galleryContent": [
+      "https://ik.imagekit.io/hamknight/cars/FORD_MUSTANG_GT/F0F3450B-5F97-4405-9AFD-218A86BDEF85_1_105_c.jpeg",
+      "https://ik.imagekit.io/hamknight/cars/FORD_MUSTANG_GT/F80D6518-FE9B-4AA0-BC13-D59FB9AD17CF_1_105_c.jpeg",
+      "https://ik.imagekit.io/hamknight/cars/FORD_MUSTANG_GT/9D5A0D54-2C2C-4E54-B715-1A4B5FDA4232_1_105_c.jpeg",
+      "https://ik.imagekit.io/hamknight/cars/FORD_MUSTANG_GT/3D3C0E57-A0CD-451A-A15F-0CF7094542CE_1_105_c.jpeg",
+      "https://ik.imagekit.io/hamknight/cars/FORD_MUSTANG_GT/B15FC94B-F6C5-446A-A2F2-7126CACD7C56_1_201_a.heic",
+      "https://ik.imagekit.io/hamknight/cars/FORD_MUSTANG_GT/3039D841-50DB-4DE2-9EB9-CC5E4C518864_1_201_a.heic",
+      "https://ik.imagekit.io/hamknight/cars/FORD_MUSTANG_GT/48D7AAFB-F7F4-441E-9CEA-1793E3F0B48F_1_201_a.heic",
+      "https://ik.imagekit.io/hamknight/cars/FORD_MUSTANG_GT/814A7343-84C5-4C93-B6F8-A0FDB646AFA4_1_201_a.heic",
+      "https://ik.imagekit.io/hamknight/cars/FORD_MUSTANG_GT/DAADE2C2-2A7B-45B9-91BE-806B64E9183E_1_201_a.heic",
+      "https://ik.imagekit.io/hamknight/cars/FORD_MUSTANG_GT/2E49E52B-3065-4A8F-9659-CA448D34B05A_1_201_a.heic"
+    ],
+    "instantBooking": true
+  },
+  {
+    "id": "3",
+    "name": "BMW 4 Series 430i Gran Coupe",
+    "tagline": "",
+    "description": "",
+    "basePrice": "250/DAY",
+    "gear": "8",
+    "gearType": "Automatic",
+    "topSpeed": "250 km/h",
+    "seats": "5",
+    "titleImage": "https://ik.imagekit.io/hamknight/cars/BMW_4_Series_430i_Gran_Coupe/IMG_0654.PNG",
+    "titleVideo": "",
+    "galleryContent": [
+      "https://ik.imagekit.io/hamknight/cars/BMW_4_Series_430i_Gran_Coupe/IMG_0655.PNG",
+      "https://ik.imagekit.io/hamknight/cars/BMW_4_Series_430i_Gran_Coupe/IMG_0656.PNG",
+      "https://ik.imagekit.io/hamknight/cars/BMW_4_Series_430i_Gran_Coupe/IMG_0657.PNG",
+      "https://ik.imagekit.io/hamknight/cars/BMW_4_Series_430i_Gran_Coupe/IMG_0658.PNG"
+    ],
+    "instantBooking": true
+  },
+  {
+    "id": "4",
+    "name": "25' Benz C300AMG Matt Black",
+    "tagline": "",
+    "description": "",
+    "basePrice": "$250/DAY",
+    "gear": "9",
+    "gearType": "Automatic",
+    "topSpeed": "250 km/h",
+    "seats": "5",
+    "titleImage": "https://ik.imagekit.io/hamknight/cars/25__Benz_C3000AMG_Matt_Black/IMG_6812.jpg",
+    "titleVideo": "",
+    "galleryContent": [
+      "https://ik.imagekit.io/hamknight/cars/25__Benz_C3000AMG_Matt_Black/IMG_6801.HEIC",
+      "https://ik.imagekit.io/hamknight/cars/25__Benz_C3000AMG_Matt_Black/IMG_6800.HEIC",
+      "https://ik.imagekit.io/hamknight/cars/25__Benz_C3000AMG_Matt_Black/IMG_6799.HEIC",
+      "https://ik.imagekit.io/hamknight/cars/25__Benz_C3000AMG_Matt_Black/IMG_6807.jpg",
+      "https://ik.imagekit.io/hamknight/cars/25__Benz_C3000AMG_Matt_Black/IMG_6809.jpg"
+    ],
+    "instantBooking": true
+  }
+]

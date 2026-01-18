@@ -1,0 +1,47 @@
+[
+  {
+    "id": "1",
+    "name": "Villa in BIMINI ",
+    "tagline": "",
+    "description": "",
+    "location": "BIMINI , BAHAMAS",
+    "bathrooms": "2",
+    "bedrooms": "",
+    "titleImage": "https://ik.imagekit.io/hamknight/villas/boat_1/User_1_.svg",
+    "titleVideo": "",
+    "galleryContent": [
+      "https://ik.imagekit.io/hamknight/villas/boat_1/doc_icon.svg"
+    ],
+    "instantBooking": true
+  },
+  {
+    "id": "2",
+    "name": "Villa Marya - Miami Shores",
+    "tagline": "",
+    "description": "",
+    "location": "MIAMI, FL",
+    "bathrooms": "2",
+    "bedrooms": "6BR",
+    "titleImage": "https://ik.imagekit.io/hamknight/villas/boat_1/User_1_.svg",
+    "titleVideo": "",
+    "galleryContent": [
+      "https://ik.imagekit.io/hamknight/villas/boat_1/doc_icon.svg"
+    ],
+    "instantBooking": true
+  },
+  {
+    "id": "3",
+    "name": "Villa In Hollywood ",
+    "tagline": "",
+    "description": "",
+    "location": "MIAMI, FL",
+    "bathrooms": "2",
+    "bedrooms": "4BR",
+    "titleImage": "https://ik.imagekit.io/hamknight/villas/boat_1/User_1_.svg",
+    "titleVideo": "",
+    "galleryContent": [
+      "https://ik.imagekit.io/hamknight/villas/boat_1/doc_icon.svg"
+    ],
+    "instantBooking": true
+  }
+]
