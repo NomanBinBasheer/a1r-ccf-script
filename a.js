@@ -1,18 +1,56 @@
+import "dotenv/config";
 import ImageKit from "imagekit";
 import { Dropbox } from "dropbox";
+import { v2 as cloudinary } from "cloudinary";
 import fetch from "node-fetch";
 import fs from "fs";
 import { getDataFromCSVUrl } from "./sheet.js";
 
+// Validate required environment variables
+const requiredEnvVars = [
+  "IMAGEKIT_PUBLIC_KEY",
+  "IMAGEKIT_PRIVATE_KEY",
+  "IMAGEKIT_URL_ENDPOINT",
+  "CLOUDINARY_CLOUD_NAME",
+  "CLOUDINARY_API_KEY",
+  "CLOUDINARY_API_SECRET",
+  "DROPBOX_ACCESS_TOKEN",
+];
+
+const missingEnvVars = requiredEnvVars.filter((varName) => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+  console.error("❌ Missing required environment variables:");
+  missingEnvVars.forEach((varName) => console.error(`   - ${varName}`));
+  console.error("\n💡 Please check your .env file and ensure all variables are set.");
+  process.exit(1);
+}
+
 const imagekit = new ImageKit({
-  publicKey: "public_RHUuVs+0yCF/s0giAdN6ZJWHvBE=",
-  privateKey: "private_azq33yQXmV19vcG2z49w77oykrk=",
-  urlEndpoint: "https://ik.imagekit.io/hamknight",
+  publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
+});
+
+// Configure Cloudinary for video uploads
+const cloudinaryConfig = {
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
+};
+
+cloudinary.config(cloudinaryConfig);
+
+// Verify configuration
+console.log("✅ Cloudinary configured:", {
+  cloud_name: cloudinary.config().cloud_name,
+  api_key: cloudinary.config().api_key ? "***" + cloudinary.config().api_key.slice(-4) : "MISSING",
+  api_secret: cloudinary.config().api_secret ? "SET" : "MISSING",
 });
 
 const dropbox = new Dropbox({
-  accessToken:
-    "sl.u.AGNN5ybfLqSMJUhBDrDJQXX7-MpiT1egl77utRfa6MquuAxOlnxsQCxElRZtRB1sYymuRkyoEmO8Hoep9G8PCzFptMYtSRtOhc9BNnQ7hGw22jjcWV4GhwT-5IdSGvqri45LCdd5hqAFIIBioxR9l4cvVdqBGP1P-7blVos3nKCHxFJLlP64zSQNKu5CJLGXkj9ioIkeFx1GawIuBy7h0Ky_hjsmrdDozc7OwrWgClufFpeiqUQqzJdWn5Ry3xNpBFn5F1O0RCzvq2deOJK-1d3vJF2XCMFHyujMcFedd7ZKISRHIyjRBblJTizInI9AnPihSmSGRwbovTxZAnIZSHELEjDRKbWdARYvfBhq1AheQFOVU7lVY6EYgl8-RpLHJYLq90uIuudz49BSqRbh5bVkGqWdSe7QSyxvtPHkDhy7JguQnTrYwRjtP9IROWJGGgpZ8rshgThLasSWkPh8ayD0ynkt8qOP23xlwYwBeFD5crGcrDgxanUJxDgEXxamiKeC6sgrlNkwnkOHBhOiU79iBYRmXrY_4duVHVFqVbD4VURJvqy7tu3xrXWes9ihQ8_Tmb0_NoIlCjPHpQq3GsewnOeeRvc1SJ3ZXJPmdltoyQCO6OOq7H2bxhJDbqqi6xLc8Oy6yhzJuC9gDsl_CSUgyvGX0eKWj65Y9ZkEFf0PIlUgmVPLBSHSzcqDAZADqYX627Oe5yCIiW4LmdOrovdHlWEX0AV-cNDrRKoVUviKYgZjLkS6rQpcBYbq4Ce79GuYDoKBJWYXbBIksLm4mJRCZIx3G4CRZ5_VybkpCqVQj_Bp5GSvRDaJbFQTJQzI4aCJ9NytzbTrwJpyYzdPwDMz_SY5ejIs0k5_tGOn2xT01IhtpoRyW2C3yO1-behFRxdgoEBT7qzMNZNdRtp6G6qqXB3pqCGqs775VxNGVQ2wsBtOb2P0srboSpyVwwZ90fPM-lyBJk5bGahFF6GZTQz4qaTbEQ7dTueeL4yW_LeDMFyZQ8eYGPAOi9YZqhQwXMJ4xdPOqdMrCTIx_q2zbCs5mRPxm3hL5z4SeVRvUqUcgkKGBT8UW6_kC_Pg_tTV01kibdjXpYMHKntQUZjRE2bzvoZeYl7Casq77rNG4ss1Wkr9-k6z6VRjd0s2NUYlLoICe_B6eWWeDl3G0q8X8EyTW5g83utBVzQQeCEIr6feFNOcLYRXaqYGeHzCL-ViWWedGugQm_jKId0Dy9qC0vMy9dbX5XKxwvaYfz5sNO9zW7S6JQtfhu_AgyNkrCyCMZB_BWFrRPd049UIJ61EeLZYaFrDf2G-Ec51Fr5zh3XdBRt5eb9L9-eWB6tXFpDsm9q_WCLMfYTxryKqbRSRVk7j2IesNd9aXI95zpeMkAbUSTXfmc4r_5YVVCeoOL20KAjTMpJNKQEt5HEP2nQ0p24G4eFGWtaEZ1AhS-ISseDqsw",
+  accessToken: process.env.DROPBOX_ACCESS_TOKEN,
   fetch,
 });
 
@@ -25,6 +63,42 @@ function sanitizeFileName(name) {
       // .replace(/_{2,}/g, "_")                     // Replace multiple underscores with single
       .replace(/^_+|_+$/g, "")
   ); // Remove leading/trailing underscores
+}
+
+// Error logging utility
+const ERROR_LOG_FILE = "error_logs.txt";
+
+function logError(context, error, additionalInfo = {}) {
+  const timestamp = new Date().toISOString();
+  const errorMessage = error?.message || error?.error_summary || String(error);
+  const errorStack = error?.stack || "No stack trace available";
+  
+  const logEntry = `
+================================================================================
+[${timestamp}] ERROR in ${context}
+--------------------------------------------------------------------------------
+Message: ${errorMessage}
+Additional Info: ${JSON.stringify(additionalInfo, null, 2)}
+Stack: ${errorStack}
+================================================================================
+`;
+  
+  // Append to error log file
+  fs.appendFileSync(ERROR_LOG_FILE, logEntry);
+  
+  // Also log to console
+  console.error(`\n❌ ERROR in ${context}:`, errorMessage);
+  if (Object.keys(additionalInfo).length > 0) {
+    console.error("Additional info:", additionalInfo);
+  }
+}
+
+// Initialize error log file
+if (fs.existsSync(ERROR_LOG_FILE)) {
+  const timestamp = new Date().toISOString();
+  fs.appendFileSync(ERROR_LOG_FILE, `\n\n${"=".repeat(80)}\nNEW SESSION STARTED: ${timestamp}\n${"=".repeat(80)}\n\n`);
+} else {
+  fs.writeFileSync(ERROR_LOG_FILE, `Error Log File - Created: ${new Date().toISOString()}\n${"=".repeat(80)}\n\n`);
 }
 
 const CSV_URL = process.argv[2];
@@ -70,6 +144,8 @@ const products = await getDataFromCSVUrl(CSV_URL, BASE_FOLDER.toLowerCase());
 async function migrateFolder(url) {
   const uploadedImages = [];
   const uploadedVideos = [];
+  const skippedFiles = [];
+  
   if (!url) {
     console.warn("No Dropbox link provided, skipping...");
     return null;
@@ -80,18 +156,20 @@ async function migrateFolder(url) {
     // 1️⃣ Get folder metadata
     const meta = await dropbox.sharingGetSharedLinkMetadata({ url: url });
     folderName = meta.result.name;
-    console.log("\nFolder name:", folderName);
+    console.log("\n📁 Folder name:", folderName);
   } catch (err) {
-    console.warn(
-      `Failed to get Dropbox folder metadata for ${url}:`,
-      err.error_summary || err.message,
-    );
+    const errorMsg = `Failed to get Dropbox folder metadata for ${url}`;
+    console.warn(errorMsg, err.error_summary || err.message);
+    logError("migrateFolder - Get Metadata", err, { url });
     return null; // skip this folder
   }
 
-  // Target ImageKit folder
+  // Target folders for ImageKit (images) and Cloudinary (videos)
   const IMAGEKIT_BASE_FOLDER = `/${BASE_FOLDER}/${sanitizeFileName(folderName)}`;
-  console.log("IMAGEKIT_BASE_FOLDER", IMAGEKIT_BASE_FOLDER);
+  const CLOUDINARY_BASE_FOLDER = `${BASE_FOLDER}/${sanitizeFileName(folderName)}`;
+  
+  console.log("📂 ImageKit folder:", IMAGEKIT_BASE_FOLDER);
+  console.log("📂 Cloudinary folder:", CLOUDINARY_BASE_FOLDER);
 
   let list;
   try {
@@ -101,68 +179,183 @@ async function migrateFolder(url) {
       shared_link: { url: url },
     });
   } catch (err) {
-    console.warn(
-      `Failed to list files for folder ${folderName}:`,
-      err.error_summary || err.message,
-    );
+    const errorMsg = `Failed to list files for folder ${folderName}`;
+    console.warn(errorMsg, err.error_summary || err.message);
+    logError("migrateFolder - List Files", err, { folderName, url });
     return null;
   }
+  
+  console.log(`\n📊 Found ${list.result.entries.length} items in folder\n`);
+  
   for (const file of list.result.entries) {
     if (file[".tag"] !== "file") continue;
 
-    console.log("Downloading:", file.name);
+    console.log(`\n🔄 Processing: ${file.name}`);
 
     const safeName = sanitizeFileName(file.name);
-
-    // Dropbox download from shared link
-    // Use "/" + file.name to construct the path relative to the shared folder root
-    const filePath = file.path_lower || "/" + file.name;
-    const download = await dropbox.sharingGetSharedLinkFile({
-      url: url,
-      path: filePath,
-    });
-    const buffer = Buffer.from(download.result.fileBinary, "binary");
-
-    // Determine file type
     const ext = safeName.substring(safeName.lastIndexOf(".")).toLowerCase();
+    const fileSize = file.size;
+    const fileSizeMB = (fileSize / 1024 / 1024).toFixed(2);
 
     let fileUrl;
 
+    // ==================== IMAGE UPLOAD (ImageKit) ====================
     if (imagesExt.includes(ext)) {
-      // Upload small image normally
-      const response = await imagekit.upload({
-        file: buffer,
-        fileName: safeName,
-        folder: IMAGEKIT_BASE_FOLDER,
-        useUniqueFileName: false,
-      });
-      fileUrl = response.url;
-      uploadedImages.push(fileUrl);
-    } else if (videosExt.includes(ext)) {
-      // Upload large video via stream
-      const tempPath = `./temp_${safeName}`;
-      fs.writeFileSync(tempPath, buffer); // save temporarily
+      try {
+        const filePath = file.path_lower || "/" + file.name;
+        
+        console.log(`  📥 Downloading image from Dropbox...`);
+        const download = await dropbox.sharingGetSharedLinkFile({
+          url: url,
+          path: filePath,
+        });
+        const buffer = Buffer.from(download.result.fileBinary, "binary");
 
-      const stream = fs.createReadStream(tempPath);
-      const response = await imagekit.upload({
-        file: stream,
-        fileName: safeName,
-        folder: IMAGEKIT_BASE_FOLDER,
-        useUniqueFileName: false,
-      });
-
-      fileUrl = response.url;
-      uploadedVideos.push(fileUrl);
-
-      // Remove temp file
-      fs.unlinkSync(tempPath);
-    } else {
-      console.log("Skipping unknown file type:", file.name);
+        console.log(`  📤 Uploading image to ImageKit (${fileSizeMB} MB)...`);
+        const response = await imagekit.upload({
+          file: buffer,
+          fileName: safeName,
+          folder: IMAGEKIT_BASE_FOLDER,
+          useUniqueFileName: false,
+        });
+        
+        fileUrl = response.url;
+        uploadedImages.push(fileUrl);
+        console.log(`  ✅ Image uploaded successfully!`);
+        console.log(`     URL: ${fileUrl}`);
+      } catch (error) {
+        logError("Image Upload", error, {
+          fileName: file.name,
+          safeName,
+          size: fileSizeMB + " MB",
+          folder: folderName,
+        });
+        console.log(`  ⚠️  Skipping ${file.name} due to error...`);
+        skippedFiles.push({
+          name: file.name,
+          type: "image",
+          size: fileSizeMB,
+          reason: error.message || "Unknown error",
+        });
+        continue;
+      }
+    } 
+    // ==================== VIDEO UPLOAD (Cloudinary) ====================
+    else if (videosExt.includes(ext)) {
+      try {
+        const filePath = file.path_lower || "/" + file.name;
+        
+        console.log(`  📥 Downloading video from Dropbox (${fileSizeMB} MB)...`);
+        const download = await dropbox.sharingGetSharedLinkFile({
+          url: url,
+          path: filePath,
+        });
+        
+        const buffer = Buffer.from(download.result.fileBinary, "binary");
+        
+        console.log(`  📤 Uploading video to Cloudinary (${fileSizeMB} MB)...`);
+        
+        let uploadResult;
+        
+        // For videos over 100MB, use upload_large with temporary file for chunked upload
+        if (fileSizeMB > 100) {
+          console.log(`  ⚡ Using chunked upload for large file (${fileSizeMB} MB)...`);
+          
+          // Write buffer to temporary file
+          const fs = await import('fs');
+          const path = await import('path');
+          const os = await import('os');
+          
+          const tempDir = os.tmpdir();
+          const tempFilePath = path.join(tempDir, `cloudinary_upload_${Date.now()}_${safeName}`);
+          
+          try {
+            // Write buffer to temp file
+            fs.writeFileSync(tempFilePath, buffer);
+            
+            // Upload using upload_large (supports chunked upload for large files)
+            uploadResult = await cloudinary.uploader.upload_large(tempFilePath, {
+              resource_type: "video",
+              folder: CLOUDINARY_BASE_FOLDER,
+              public_id: safeName.substring(0, safeName.lastIndexOf(".")),
+              overwrite: false,
+              chunk_size: 20_000_000, // 20 MB chunks
+              timeout: 600000, // 10 minutes for large files
+            });
+            
+            // Clean up temp file
+            fs.unlinkSync(tempFilePath);
+          } catch (error) {
+            // Clean up temp file on error
+            if (fs.existsSync(tempFilePath)) {
+              fs.unlinkSync(tempFilePath);
+            }
+            throw error;
+          }
+        } 
+        // For smaller videos, use regular upload with data URI
+        else {
+          // Convert buffer to base64 data URI for proper authenticated upload
+          // NOTE: upload_stream has a bug in SDK v2.x that incorrectly treats it as unsigned upload
+          // Using direct upload() method with data URI as workaround
+          const base64Video = buffer.toString('base64');
+          const dataUri = `data:video/${ext.slice(1)};base64,${base64Video}`;
+          
+          uploadResult = await cloudinary.uploader.upload(dataUri, {
+            resource_type: "video",
+            type: "upload", // Explicitly specify signed upload
+            folder: CLOUDINARY_BASE_FOLDER,
+            public_id: safeName.substring(0, safeName.lastIndexOf(".")),
+            overwrite: false,
+            timeout: 600000, // 10 minutes for large files
+          });
+        }
+        
+        fileUrl = uploadResult.secure_url;
+        uploadedVideos.push(fileUrl);
+        
+        console.log(`  ✅ Video uploaded successfully!`);
+        console.log(`     URL: ${fileUrl}`);
+      } catch (error) {
+        logError("Video Upload", error, {
+          fileName: file.name,
+          safeName,
+          size: fileSizeMB + " MB",
+          folder: folderName,
+        });
+        console.log(`  ⚠️  Skipping ${file.name} due to error...`);
+        skippedFiles.push({
+          name: file.name,
+          type: "video",
+          size: fileSizeMB,
+          reason: error.message || "Unknown error",
+        });
+        continue;
+      }
+    } 
+    // ==================== UNKNOWN FILE TYPE ====================
+    else {
+      console.log(`  ⏭️  Skipping unknown file type: ${file.name}`);
       continue;
     }
-
-    console.log("Uploaded to ImageKit:", fileUrl);
   }
+
+  // Summary
+  console.log("\n" + "=".repeat(80));
+  console.log(`📊 FOLDER SUMMARY: ${folderName}`);
+  console.log("=".repeat(80));
+  console.log(`✅ Images uploaded: ${uploadedImages.length}`);
+  console.log(`✅ Videos uploaded: ${uploadedVideos.length}`);
+  console.log(`⚠️  Files skipped: ${skippedFiles.length}`);
+  
+  if (skippedFiles.length > 0) {
+    console.log("\n⚠️  Skipped files details:");
+    skippedFiles.forEach(f => {
+      console.log(`   - ${f.name} (${f.type}, ${f.size} MB): ${f.reason}`);
+    });
+    console.log("\n💡 Check error_logs.txt for detailed error information");
+  }
+  console.log("=".repeat(80) + "\n");
 
   const uploadedData = {
     titleImage: uploadedImages[0] || "",
@@ -171,27 +364,100 @@ async function migrateFolder(url) {
     galleryVideos: uploadedVideos.slice(1),
   };
 
-  console.log("Saved to JSON under key:", folderName);
   return uploadedData;
 }
 
+console.log("\n" + "=".repeat(80));
+console.log("🚀 STARTING MIGRATION PROCESS");
+console.log("=".repeat(80));
+console.log(`📊 CSV URL: ${CSV_URL}`);
+console.log(`📁 Base Folder: ${BASE_FOLDER}`);
+console.log(`📝 Total products to process: ${products.length}`);
+console.log("=".repeat(80) + "\n");
+
+let processedCount = 0;
+let successCount = 0;
+let failedCount = 0;
+
 for (const product of products) {
+  processedCount++;
+  console.log(`\n${"=".repeat(80)}`);
+  console.log(`PRODUCT ${processedCount}/${products.length}`);
+  console.log("=".repeat(80));
+  
   const dropboxLink = product["dropboxLink"];
-  if (!dropboxLink) continue;
-
-  const uploadedData = await migrateFolder(dropboxLink);
-
-  // Update product object
-  product.titleImage = uploadedData?.titleImage || "";
-  product.titleVideo = uploadedData?.titleVideo || "";
-  product.galleryContent =
-    [...uploadedData?.galleryVideos, ...uploadedData?.galleryImages] || [];
-  product.instantBooking = true;
-  if (BASE_FOLDER === "boats") {
-    product.inclusions = product.inclusions.split(",").map((inc) => inc);
-    product.category = BASE_FOLDER;
+  
+  if (!dropboxLink) {
+    console.log("⚠️  No Dropbox link found for this product, skipping...");
+    continue;
   }
-  delete product["dropboxLink"];
+
+  try {
+    const uploadedData = await migrateFolder(dropboxLink);
+
+    if (!uploadedData) {
+      failedCount++;
+      logError("Product Migration", new Error("migrateFolder returned null"), {
+        productIndex: processedCount,
+        dropboxLink,
+      });
+      console.log("❌ Failed to migrate this product's folder\n");
+      continue;
+    }
+
+    // Update product object
+    product.titleImage = uploadedData.titleImage || "";
+    product.titleVideo = uploadedData.titleVideo || "";
+    
+    // Combine videos first, then images in galleryContent
+    product.galleryContent = [
+      ...uploadedData.galleryVideos,
+      ...uploadedData.galleryImages
+    ];
+    
+    product.instantBooking = true;
+    
+    if (BASE_FOLDER === "boats") {
+      if (product.inclusions && typeof product.inclusions === "string") {
+        product.inclusions = product.inclusions.split(",").map((inc) => inc.trim());
+      }
+      product.category = BASE_FOLDER;
+    }
+    
+    delete product["dropboxLink"];
+    
+    successCount++;
+    console.log("✅ Product migration completed successfully!\n");
+  } catch (error) {
+    failedCount++;
+    logError("Product Migration Loop", error, {
+      productIndex: processedCount,
+      dropboxLink,
+      product: JSON.stringify(product, null, 2),
+    });
+    console.log("❌ Failed to migrate product due to unexpected error\n");
+    // Continue to next product instead of exiting
+    continue;
+  }
 }
-fs.writeFileSync(`${BASE_FOLDER}.json`, JSON.stringify(products, null, 2));
-console.log("Migration completed!", products);
+
+// Save results to JSON file
+try {
+  const outputFile = `${BASE_FOLDER}.json`;
+  fs.writeFileSync(outputFile, JSON.stringify(products, null, 2));
+  console.log("\n" + "=".repeat(80));
+  console.log("🎉 MIGRATION COMPLETED!");
+  console.log("=".repeat(80));
+  console.log(`📊 Total products: ${products.length}`);
+  console.log(`✅ Successfully migrated: ${successCount}`);
+  console.log(`❌ Failed: ${failedCount}`);
+  console.log(`📄 Output file: ${outputFile}`);
+  console.log(`📋 Error log: ${ERROR_LOG_FILE}`);
+  console.log("=".repeat(80) + "\n");
+} catch (error) {
+  logError("Save JSON File", error, {
+    outputFile: `${BASE_FOLDER}.json`,
+  });
+  console.error("❌ CRITICAL ERROR: Failed to save output JSON file!");
+  process.exit(1);
+}
