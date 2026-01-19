@@ -11,11 +11,15 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.971.0",
+    "@aws-sdk/lib-storage": "^3.971.0",
+    "adm-zip": "^0.5.16",
     "cloudinary": "^2.9.0",
     "csv-parser": "^3.2.0",
     "dotenv": "^17.2.3",
     "dropbox": "^10.34.0",
     "imagekit": "^6.0.0",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "yauzl-promise": "^4.0.0"
   }
 }

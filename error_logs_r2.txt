@@ -1,0 +1,93 @@
+Error Log - Created: 2026-01-19T15:57:56.776Z
+
+================================================================================
+[2026-01-19T15:59:06.262Z] ERROR in Get Folder Metadata
+--------------------------------------------------------------------------------
+Message: Response failed with a 400 code
+Additional Info: {
+  "dropboxUrl": "https://www.dropbox.com/scl/fo/fy50pz12s2rvceujky1rq/AJUeZ939B-2Usl7DYaw7E34?rlkey=bx3uygx3fa05f0zvcqfd65rb4&st=9k1c668x&dl=0",
+  "productName": "37FT MONTERRY II"
+}
+================================================================================
+
+================================================================================
+[2026-01-19T15:59:06.662Z] ERROR in Get Folder Metadata
+--------------------------------------------------------------------------------
+Message: Response failed with a 400 code
+Additional Info: {
+  "dropboxUrl": "https://www.dropbox.com/scl/fo/osbehzbjlfw9s0d335cug/AEygg_EWJVs24xMKbyCz1eQ?rlkey=6g77k748smar1cllo6j9xio12&st=zu0d6u6n&dl=0",
+  "productName": "37FT CRUISER"
+}
+================================================================================
+
+================================================================================
+[2026-01-19T15:59:07.070Z] ERROR in Get Folder Metadata
+--------------------------------------------------------------------------------
+Message: Response failed with a 400 code
+Additional Info: {
+  "dropboxUrl": "https://www.dropbox.com/scl/fo/4gedjmhzt0o1us457gx8q/AOFdPABFbDorQ8ceHTyEayQ?rlkey=110elk7sqmg3tu04x9jcpj29j&st=ysh2pne0&dl=0",
+  "productName": "37ft Sea ray Sundancer"
+}
+================================================================================
+
+
+New Session: 2026-01-19T16:06:48.957Z
+
+================================================================================
+[2026-01-19T16:07:08.093Z] ERROR in Extract ZIP
+--------------------------------------------------------------------------------
+Message: Failed to extract ZIP: unzipSync is not a function. (In 'unzipSync(new Uint8Array(zipBuffer))', 'unzipSync' is undefined)
+Additional Info: {
+  "dropboxUrl": "https://www.dropbox.com/scl/fo/fy50pz12s2rvceujky1rq/AJUeZ939B-2Usl7DYaw7E34?rlkey=bx3uygx3fa05f0zvcqfd65rb4&st=9k1c668x&dl=0",
+  "productName": "37FT MONTERRY II"
+}
+================================================================================
+
+================================================================================
+[2026-01-19T16:07:19.332Z] ERROR in Extract ZIP
+--------------------------------------------------------------------------------
+Message: Failed to extract ZIP: unzipSync is not a function. (In 'unzipSync(new Uint8Array(zipBuffer))', 'unzipSync' is undefined)
+Additional Info: {
+  "dropboxUrl": "https://www.dropbox.com/scl/fo/osbehzbjlfw9s0d335cug/AEygg_EWJVs24xMKbyCz1eQ?rlkey=6g77k748smar1cllo6j9xio12&st=zu0d6u6n&dl=0",
+  "productName": "37FT CRUISER"
+}
+================================================================================
+
+================================================================================
+[2026-01-19T16:08:32.968Z] ERROR in Extract ZIP
+--------------------------------------------------------------------------------
+Message: Failed to extract ZIP: unzipSync is not a function. (In 'unzipSync(new Uint8Array(zipBuffer))', 'unzipSync' is undefined)
+Additional Info: {
+  "dropboxUrl": "https://www.dropbox.com/scl/fo/4gedjmhzt0o1us457gx8q/AOFdPABFbDorQ8ceHTyEayQ?rlkey=110elk7sqmg3tu04x9jcpj29j&st=ysh2pne0&dl=0",
+  "productName": "37ft Sea ray Sundancer"
+}
+================================================================================
+
+
+New Session: 2026-01-19T16:09:13.519Z
+
+================================================================================
+[2026-01-19T16:09:32.927Z] ERROR in Product Migration
+--------------------------------------------------------------------------------
+Message: undefined is not an object (evaluating 'files[0].path')
+Additional Info: {
+  "productId": "3",
+  "productName": "37FT MONTERRY II"
+}
+================================================================================
+
+
+New Session: 2026-01-19T16:09:57.765Z
+
+================================================================================
+[2026-01-19T16:10:15.979Z] ERROR in Product Migration
+--------------------------------------------------------------------------------
+Message: undefined is not an object (evaluating 'files[0].path')
+Additional Info: {
+  "productId": "3",
+  "productName": "37FT MONTERRY II"
+}
+================================================================================
+
+
+New Session: 2026-01-19T16:10:56.539Z
