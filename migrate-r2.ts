@@ -1109,6 +1109,19 @@ async function main() {
       );
 
       if (migrationResult) {
+        // Helper to check if URL is a valid direct media URL (not a Dropbox folder link)
+        const isValidMediaUrl = (url: string): boolean => {
+          if (!url) return false;
+          // Dropbox folder links contain /fo/ or /scl/fo/
+          if (url.includes("/fo/") || url.includes("/scl/fo/")) return false;
+          // Check for common image/video extensions or CDN URLs
+          return /\.(jpg|jpeg|png|gif|webp|mp4|mov|avi|mkv)$/i.test(url) || 
+                 url.includes("r2.dev") ||
+                 url.includes("cloudflare") ||
+                 url.includes("imagekit") ||
+                 url.includes("cloudinary");
+        };
+        
         // Build final product object
         const finalProduct: any = {
           id: product.id,
@@ -1131,9 +1144,13 @@ async function main() {
           year: product.year,
           cabins: product.cabins,
           bathrooms: product.bathrooms,
-          // Use external title image/video if provided, otherwise use first from gallery
-          titleImage: product.titleImageExternal || migrationResult.titleImage,
-          titleVideo: product.titleVideoExternal || migrationResult.titleVideo,
+          // Use external title image/video only if valid direct URL, otherwise use first from gallery
+          titleImage: isValidMediaUrl(product.titleImageExternal) 
+            ? product.titleImageExternal 
+            : migrationResult.titleImage,
+          titleVideo: isValidMediaUrl(product.titleVideoExternal)
+            ? product.titleVideoExternal
+            : migrationResult.titleVideo,
           galleryContent: migrationResult.galleryContent,
           instantBooking: true,
           category: category,
