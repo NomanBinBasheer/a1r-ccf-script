@@ -18,7 +18,10 @@
 
 import { S3Client, PutObjectCommand, HeadBucketCommand } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
-import { writeFileSync, appendFileSync, existsSync } from "fs";
+import { writeFileSync, appendFileSync, existsSync, readFileSync, mkdirSync, rmSync, unlinkSync } from "fs";
+import { execSync, spawn } from "child_process";
+import { tmpdir } from "os";
+import { join } from "path";
 
 // ============================================================================
 // CONFIGURATION
@@ -33,12 +36,31 @@ const CONFIG = {
     publicUrl: process.env.R2_PUBLIC_URL!.replace(/\/$/, ""),
   },
   
-  // Test mode: products 3, 4, 5 (0-indexed: 2, 3, 4)
-  testProductIndices: [2, 3, 4],
+  // Test mode: products 6, 7, 8 (0-indexed: 5, 6, 7)
+  testProductIndices: [5, 6, 7],
   
   // Output file
   outputFile: "boats-test.json",
   errorLogFile: "error_logs_r2.txt",
+  
+  // Media processing settings
+  media: {
+    // Video conversion: convert non-MP4 videos to MP4
+    convertVideosToMp4: true,
+    // Video compression: compress videos larger than this (in MB)
+    compressVideosOverMB: 100,
+    // Video target bitrate for compression (in Mbps)
+    videoTargetBitrateMbps: 6,
+    // Image compression: compress images larger than this (in MB)
+    compressImagesOverMB: 2,
+    // Image max dimension (resize if larger)
+    imageMaxDimension: 2000,
+    // Image quality for JPEG compression (1-100)
+    imageQuality: 85,
+  },
+  
+  // Temp directory for ffmpeg processing
+  tempDir: join(tmpdir(), "allin1rentals-migration"),
 };
 
 // Validate required env vars
@@ -118,6 +140,227 @@ function sanitizeName(name: string): string {
     .replace(/[<>:"/\\|?*\(\)']/g, "_")
     .replace(/_{2,}/g, "_")
     .replace(/^_+|_+$/g, "");
+}
+
+// ============================================================================
+// FFMPEG VIDEO PROCESSING
+// ============================================================================
+
+/**
+ * Check if ffmpeg is available
+ */
+function checkFfmpeg(): boolean {
+  try {
+    execSync("ffmpeg -version", { stdio: "pipe" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check if a video needs conversion (non-MP4 formats)
+ */
+function needsVideoConversion(filename: string): boolean {
+  const ext = filename.substring(filename.lastIndexOf(".")).toLowerCase();
+  const nonMp4Formats = [".mov", ".avi", ".mkv", ".wmv", ".flv", ".m4v", ".mpeg", ".mpg", ".3gp", ".ogv", ".webm"];
+  return nonMp4Formats.includes(ext);
+}
+
+/**
+ * Convert video to MP4 using ffmpeg
+ * Returns the converted buffer and new filename
+ */
+async function convertVideoToMp4(
+  inputBuffer: Buffer,
+  originalFilename: string,
+  compress: boolean = false
+): Promise<{ buffer: Buffer; filename: string }> {
+  // Ensure temp directory exists
+  if (!existsSync(CONFIG.tempDir)) {
+    mkdirSync(CONFIG.tempDir, { recursive: true });
+  }
+  
+  const timestamp = Date.now();
+  const inputPath = join(CONFIG.tempDir, `input_${timestamp}_${originalFilename}`);
+  const baseName = originalFilename.substring(0, originalFilename.lastIndexOf("."));
+  const outputFilename = `${baseName}.mp4`;
+  const outputPath = join(CONFIG.tempDir, `output_${timestamp}_${outputFilename}`);
+  
+  try {
+    // Write input buffer to temp file
+    writeFileSync(inputPath, inputBuffer);
+    
+    // Build ffmpeg command
+    const ffmpegArgs = [
+      "-i", inputPath,
+      "-c:v", "libx264",      // H.264 video codec
+      "-preset", "medium",     // Balance between speed and compression
+      "-crf", compress ? "26" : "23",  // Quality: 23 is default, 26 for compression
+      "-c:a", "aac",          // AAC audio codec
+      "-b:a", "128k",         // Audio bitrate
+      "-movflags", "+faststart", // Enable streaming
+      "-y",                   // Overwrite output
+    ];
+    
+    // Add bitrate limit for compression
+    if (compress) {
+      ffmpegArgs.push("-maxrate", `${CONFIG.media.videoTargetBitrateMbps}M`);
+      ffmpegArgs.push("-bufsize", `${CONFIG.media.videoTargetBitrateMbps * 2}M`);
+    }
+    
+    ffmpegArgs.push(outputPath);
+    
+    // Run ffmpeg
+    await new Promise<void>((resolve, reject) => {
+      const ffmpeg = spawn("ffmpeg", ffmpegArgs);
+      let stderr = "";
+      
+      ffmpeg.stderr.on("data", (data) => {
+        stderr += data.toString();
+      });
+      
+      ffmpeg.on("close", (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`ffmpeg exited with code ${code}: ${stderr.slice(-500)}`));
+        }
+      });
+      
+      ffmpeg.on("error", (err) => {
+        reject(new Error(`ffmpeg spawn error: ${err.message}`));
+      });
+    });
+    
+    // Read output file
+    const outputBuffer = readFileSync(outputPath);
+    
+    return { buffer: outputBuffer, filename: outputFilename };
+  } finally {
+    // Cleanup temp files
+    try {
+      if (existsSync(inputPath)) unlinkSync(inputPath);
+      if (existsSync(outputPath)) unlinkSync(outputPath);
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
+}
+
+/**
+ * Compress video using ffmpeg (for already-MP4 files that are too large)
+ */
+async function compressVideo(
+  inputBuffer: Buffer,
+  filename: string
+): Promise<Buffer> {
+  const result = await convertVideoToMp4(inputBuffer, filename, true);
+  return result.buffer;
+}
+
+/**
+ * Process video: convert to MP4 if needed, compress if too large
+ */
+async function processVideo(
+  buffer: Buffer,
+  filename: string
+): Promise<{ buffer: Buffer; filename: string }> {
+  const fileSizeMB = buffer.length / (1024 * 1024);
+  const needsConversion = needsVideoConversion(filename);
+  const needsCompression = fileSizeMB > CONFIG.media.compressVideosOverMB;
+  
+  if (needsConversion) {
+    console.log(`      Converting ${filename} to MP4...`);
+    const result = await convertVideoToMp4(buffer, filename, needsCompression);
+    const newSizeMB = result.buffer.length / (1024 * 1024);
+    console.log(`      Converted: ${fileSizeMB.toFixed(1)}MB -> ${newSizeMB.toFixed(1)}MB`);
+    return result;
+  } else if (needsCompression) {
+    console.log(`      Compressing large video (${fileSizeMB.toFixed(1)}MB)...`);
+    const compressedBuffer = await compressVideo(buffer, filename);
+    const newSizeMB = compressedBuffer.length / (1024 * 1024);
+    console.log(`      Compressed: ${fileSizeMB.toFixed(1)}MB -> ${newSizeMB.toFixed(1)}MB`);
+    return { buffer: compressedBuffer, filename };
+  }
+  
+  return { buffer, filename };
+}
+
+// ============================================================================
+// IMAGE PROCESSING (using sharp if available, fallback to ImageMagick)
+// ============================================================================
+
+/**
+ * Check if ImageMagick is available
+ */
+function checkImageMagick(): boolean {
+  try {
+    execSync("convert -version", { stdio: "pipe" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Compress image using ImageMagick
+ */
+async function compressImage(
+  inputBuffer: Buffer,
+  filename: string
+): Promise<Buffer> {
+  const fileSizeMB = inputBuffer.length / (1024 * 1024);
+  
+  // Skip if under threshold
+  if (fileSizeMB <= CONFIG.media.compressImagesOverMB) {
+    return inputBuffer;
+  }
+  
+  // Check if ImageMagick is available
+  if (!checkImageMagick()) {
+    console.log(`      ImageMagick not available, skipping compression`);
+    return inputBuffer;
+  }
+  
+  // Ensure temp directory exists
+  if (!existsSync(CONFIG.tempDir)) {
+    mkdirSync(CONFIG.tempDir, { recursive: true });
+  }
+  
+  const timestamp = Date.now();
+  const ext = filename.substring(filename.lastIndexOf(".")).toLowerCase();
+  const inputPath = join(CONFIG.tempDir, `img_input_${timestamp}${ext}`);
+  const outputPath = join(CONFIG.tempDir, `img_output_${timestamp}.jpg`);
+  
+  try {
+    writeFileSync(inputPath, inputBuffer);
+    
+    // Use ImageMagick to resize and compress
+    // -resize limits max dimension while preserving aspect ratio
+    // -quality sets JPEG quality
+    execSync(
+      `convert "${inputPath}" -resize ${CONFIG.media.imageMaxDimension}x${CONFIG.media.imageMaxDimension}\\> -quality ${CONFIG.media.imageQuality} "${outputPath}"`,
+      { stdio: "pipe" }
+    );
+    
+    const outputBuffer = readFileSync(outputPath);
+    const newSizeMB = outputBuffer.length / (1024 * 1024);
+    
+    console.log(`      Image compressed: ${fileSizeMB.toFixed(1)}MB -> ${newSizeMB.toFixed(1)}MB`);
+    
+    return outputBuffer;
+  } catch (err: any) {
+    console.log(`      Image compression failed: ${err.message}`);
+    return inputBuffer;
+  } finally {
+    try {
+      if (existsSync(inputPath)) unlinkSync(inputPath);
+      if (existsSync(outputPath)) unlinkSync(outputPath);
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
 }
 
 // ============================================================================
@@ -521,25 +764,53 @@ async function migrateDropboxFolder(
   let failedCount = 0;
 
   for (const file of files) {
-    const safeName = sanitizeName(file.name);
+    let processedBuffer = file.data;
+    let processedFilename = file.name;
     const fileType = getFileType(file.name);
-    const fileSizeMB = (file.data.length / 1024 / 1024).toFixed(2);
-    
-    // Preserve subfolder structure in R2
-    const pathParts = file.path.split("/");
-    // Remove the root folder name (it's usually duplicated)
-    const relativePath = pathParts.length > 1 
-      ? pathParts.slice(1).map(p => sanitizeName(p)).join("/")
-      : safeName;
-    const r2Key = `${r2Prefix}/${relativePath}`;
+    const originalSizeMB = (file.data.length / 1024 / 1024).toFixed(2);
 
-    console.log(`   [${uploadedCount + 1}/${files.length}] ${file.name} (${fileSizeMB} MB)`);
+    console.log(`   [${uploadedCount + 1}/${files.length}] ${file.name} (${originalSizeMB} MB)`);
 
     try {
+      // Process video: convert to MP4 if needed, compress if large
+      if (fileType === "video" && CONFIG.media.convertVideosToMp4) {
+        try {
+          const processed = await processVideo(file.data, file.name);
+          processedBuffer = processed.buffer;
+          processedFilename = processed.filename;
+        } catch (videoErr: any) {
+          console.log(`      Video processing failed, uploading original: ${videoErr.message}`);
+        }
+      }
+      
+      // Compress large images
+      if (fileType === "image") {
+        try {
+          processedBuffer = await compressImage(file.data, file.name);
+        } catch (imgErr: any) {
+          console.log(`      Image compression failed, uploading original: ${imgErr.message}`);
+        }
+      }
+      
+      // Build R2 key with potentially updated filename
+      const safeName = sanitizeName(processedFilename);
+      const pathParts = file.path.split("/");
+      // Remove the root folder name (it's usually duplicated)
+      let relativePath: string;
+      if (pathParts.length > 1) {
+        // Replace the original filename with processed filename in the path
+        const pathWithoutFilename = pathParts.slice(1, -1).map(p => sanitizeName(p));
+        relativePath = [...pathWithoutFilename, safeName].join("/");
+      } else {
+        relativePath = safeName;
+      }
+      const r2Key = `${r2Prefix}/${relativePath}`;
+
       // Upload to R2
-      process.stdout.write(`      Uploading to R2...`);
-      const mimeType = getMimeType(file.name);
-      const cdnUrl = await uploadToR2(file.data, r2Key, mimeType);
+      const finalSizeMB = (processedBuffer.length / 1024 / 1024).toFixed(2);
+      process.stdout.write(`      Uploading to R2 (${finalSizeMB} MB)...`);
+      const mimeType = getMimeType(processedFilename);
+      const cdnUrl = await uploadToR2(processedBuffer, r2Key, mimeType);
       console.log(` done`);
       console.log(`      URL: ${cdnUrl}`);
 
@@ -558,7 +829,7 @@ async function migrateDropboxFolder(
       failedCount++;
       logError("File Upload", error, {
         fileName: file.name,
-        size: fileSizeMB + " MB",
+        size: originalSizeMB + " MB",
         folder: folderName,
       });
       console.log(`      FAILED: ${error.message}`);
@@ -577,6 +848,7 @@ async function migrateDropboxFolder(
 interface Product {
   id: string;
   name: string;
+  slug: string;
   tagline: string;
   description: string;
   location: string;
@@ -594,6 +866,8 @@ interface Product {
   year: string;
   cabins: string;
   bathrooms: string;
+  titleVideoExternal: string;
+  titleImageExternal: string;
   dropboxLink: string;
   [key: string]: string;
 }
@@ -602,6 +876,7 @@ interface Product {
 const COLUMN_MAP: Record<string, string> = {
   "Sr. No": "id",
   "Product Name": "name",
+  "Slugs": "slug",
   "Tagline": "tagline",
   "Description": "description",
   "Location": "location",
@@ -619,6 +894,8 @@ const COLUMN_MAP: Record<string, string> = {
   "Year": "year",
   "Cabins": "cabins",
   "Bathrooms": "bathrooms",
+  "Title Video Link": "titleVideoExternal",
+  "Title Image Link": "titleImageExternal",
   "Dropbox Link": "dropboxLink",
 };
 
@@ -743,6 +1020,12 @@ async function main() {
     process.exit(1);
   }
 
+  // Check for ffmpeg and ImageMagick
+  const hasFfmpeg = checkFfmpeg();
+  const hasImageMagick = checkImageMagick();
+
+  const productNumbers = CONFIG.testProductIndices.map(i => i + 1).join(", ");
+
   console.log("\n" + "=".repeat(70));
   console.log("ALLIN1RENTALS R2 MIGRATION");
   console.log("=".repeat(70));
@@ -750,9 +1033,18 @@ async function main() {
   console.log(`Category: ${category}`);
   console.log(`R2 Bucket: ${CONFIG.r2.bucketName}`);
   console.log(`CDN URL: ${CONFIG.r2.publicUrl}`);
-  console.log(`Test Mode: Products 3, 4, 5 only`);
+  console.log(`Test Mode: Products ${productNumbers}`);
   console.log(`Output: ${CONFIG.outputFile}`);
+  console.log(`ffmpeg available: ${hasFfmpeg ? "Yes" : "No"}`);
+  console.log(`ImageMagick available: ${hasImageMagick ? "Yes" : "No"}`);
   console.log("=".repeat(70) + "\n");
+
+  if (!hasFfmpeg) {
+    console.log("WARNING: ffmpeg not found. Video conversion will be skipped.");
+  }
+  if (!hasImageMagick) {
+    console.log("WARNING: ImageMagick not found. Image compression will be skipped.");
+  }
 
   // Verify R2 connection
   console.log("Verifying R2 connection...");
@@ -765,10 +1057,22 @@ async function main() {
     process.exit(1);
   }
 
+  // Load existing data if appending
+  let existingData: any[] = [];
+  if (existsSync(CONFIG.outputFile)) {
+    try {
+      const existingContent = readFileSync(CONFIG.outputFile, "utf-8");
+      existingData = JSON.parse(existingContent);
+      console.log(`Loaded ${existingData.length} existing products from ${CONFIG.outputFile}`);
+    } catch (e) {
+      console.log(`Could not read existing file, starting fresh`);
+    }
+  }
+
   // Fetch and parse CSV
   const allProducts = await fetchAndParseCSV(csvUrl);
 
-  // Filter to test products only (indices 2, 3, 4 for products 3, 4, 5)
+  // Filter to test products only
   const testProducts = CONFIG.testProductIndices
     .map((idx) => allProducts[idx])
     .filter(Boolean);
@@ -786,7 +1090,10 @@ async function main() {
     console.log("=".repeat(70));
     console.log(`PRODUCT ${productNum}: ${product.name || "Unnamed"}`);
     console.log("=".repeat(70));
+    console.log(`   Slug: ${product.slug || "N/A"}`);
     console.log(`   Dropbox Link: ${product.dropboxLink || "NONE"}`);
+    console.log(`   Title Image External: ${product.titleImageExternal || "N/A"}`);
+    console.log(`   Title Video External: ${product.titleVideoExternal || "N/A"}`);
 
     if (!product.dropboxLink) {
       console.log("   Skipping - no Dropbox link\n");
@@ -806,6 +1113,7 @@ async function main() {
         const finalProduct: any = {
           id: product.id,
           name: product.name,
+          slug: product.slug || sanitizeName(product.name).toLowerCase(),
           tagline: product.tagline,
           description: product.description,
           location: product.location,
@@ -823,8 +1131,9 @@ async function main() {
           year: product.year,
           cabins: product.cabins,
           bathrooms: product.bathrooms,
-          titleImage: migrationResult.titleImage,
-          titleVideo: migrationResult.titleVideo,
+          // Use external title image/video if provided, otherwise use first from gallery
+          titleImage: product.titleImageExternal || migrationResult.titleImage,
+          titleVideo: product.titleVideoExternal || migrationResult.titleVideo,
           galleryContent: migrationResult.galleryContent,
           instantBooking: true,
           category: category,
@@ -847,8 +1156,11 @@ async function main() {
     }
   }
 
+  // Merge with existing data (append new products)
+  const finalData = [...existingData, ...results];
+  
   // Save results
-  writeFileSync(CONFIG.outputFile, JSON.stringify(results, null, 2));
+  writeFileSync(CONFIG.outputFile, JSON.stringify(finalData, null, 2));
 
   // Final summary
   console.log("\n" + "=".repeat(70));
@@ -857,25 +1169,36 @@ async function main() {
   console.log(`Total Products Processed: ${testProducts.length}`);
   console.log(`Successful: ${successCount}`);
   console.log(`Failed: ${failCount}`);
+  console.log(`Previously existing: ${existingData.length}`);
+  console.log(`Total in output file: ${finalData.length}`);
   console.log(`Output File: ${CONFIG.outputFile}`);
   console.log(`Error Log: ${CONFIG.errorLogFile}`);
   console.log("=".repeat(70) + "\n");
 
   // Quick stats on output
-  if (results.length > 0) {
-    const totalImages = results.reduce(
+  if (finalData.length > 0) {
+    const totalImages = finalData.reduce(
       (sum, p) => sum + p.galleryContent.filter((u: string) => getFileType(u) === "image").length,
       0
     );
-    const totalVideos = results.reduce(
+    const totalVideos = finalData.reduce(
       (sum, p) => sum + p.galleryContent.filter((u: string) => getFileType(u) === "video").length,
       0
     );
     console.log("OUTPUT STATS:");
-    console.log(`   Products with content: ${results.length}`);
+    console.log(`   Products with content: ${finalData.length}`);
     console.log(`   Total images: ${totalImages}`);
     console.log(`   Total videos: ${totalVideos}`);
-    console.log(`   Average gallery size: ${((totalImages + totalVideos) / results.length).toFixed(1)} files`);
+    console.log(`   Average gallery size: ${((totalImages + totalVideos) / finalData.length).toFixed(1)} files`);
+  }
+  
+  // Cleanup temp directory
+  try {
+    if (existsSync(CONFIG.tempDir)) {
+      rmSync(CONFIG.tempDir, { recursive: true, force: true });
+    }
+  } catch {
+    // Ignore cleanup errors
   }
 }
 
