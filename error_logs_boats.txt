@@ -58,3 +58,22 @@
   "dropboxUrl": "https://drive.google.com/drive/folders/1_n1YpNw3E2RtFqWJ5aLffKi1pSv1N_Fn?usp=sharing",
   "productName": "27FT FOUR WINNS"
 }
+
+[2026-01-20T05:25:02.768Z] Extract: ADM-ZIP: Invalid or unsupported zip format. No END header found
+{
+  "dropboxUrl": "https://www.dropbox.com/scl/fo/ixwqltfrlxdtfmaosvvvl/AFNXlMnW1npDL4RlvKeMZ6Q?rlkey=owpzfe1plfdja75htm6657taw&st=o5fy9ono&dl=0|",
+  "productName": "55FT CRUISER",
+  "boatId": "48"
+}
+
+[2026-01-20T06:23:50.399Z] StreamingDownload: Extraction failed: Command failed: unzip -o -q "/tmp/allin1rentals-boat-21-1768889973247/boat_21.zip" -d "/tmp/allin1rentals-boat-21-1768889973247/extracted"
+warning:  stripped absolute path spec from /
+mapname:  conversion of  failed
+error: invalid zip file with overlapped components (possible zip bomb)
+ To unzip the file anyway, rerun the command with UNZIP_DISABLE_ZIPBOMB_DETECTION=TRUE environmnent variable
+
+{
+  "dropboxUrl": "https://www.dropbox.com/scl/fo/4ke66puh1hkdhv2nizn0g/AGbCTrT_X9boEuZtfmdD_Xg?dl=0&e=1&rlkey=qqzpnjolczug35ky10ouellbu&st=hnb5e1s2",
+  "productName": "68FT AZIMUT",
+  "boatId": "21"
+}
