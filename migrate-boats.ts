@@ -32,6 +32,12 @@ import {
   prepareDownloadUrl 
 } from "./lib/streaming-download";
 
+// Import Google Drive download module
+import {
+  gdriveDownloadFolder,
+  cleanupTempDir as cleanupGDriveTempDir,
+} from "./lib/gdrive-download";
+
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
@@ -288,13 +294,113 @@ interface MigrationResult {
   titleVideo: string;
 }
 
-async function migrateDropboxFolder(dropboxUrl: string, productName: string, boatId: string): Promise<MigrationResult | null> {
-  if (!dropboxUrl) return null;
+/**
+ * Check if URL is a Google Drive link
+ */
+function isGoogleDriveLink(url: string): boolean {
+  return url.includes('drive.google.com') || url.includes('docs.google.com/file');
+}
+
+/**
+ * Migrate media from either Dropbox or Google Drive folder
+ */
+async function migrateMediaFolder(folderUrl: string, productName: string, boatId: string): Promise<MigrationResult | null> {
+  if (!folderUrl) return null;
+  
+  // =========================================================================
+  // GOOGLE DRIVE HANDLING
+  // =========================================================================
+  if (isGoogleDriveLink(folderUrl)) {
+    console.log(`   Using GOOGLE DRIVE download`);
+    
+    const gdriveResult = await gdriveDownloadFolder(folderUrl, boatId, productName);
+    
+    if (!gdriveResult.success) {
+      logError("GDriveDownload", new Error(gdriveResult.error || "Unknown error"), { folderUrl, productName, boatId });
+      return null;
+    }
+    
+    if (gdriveResult.files.length === 0) {
+      cleanupGDriveTempDir(gdriveResult.tempDir);
+      return { galleryContent: [], titleImage: "", titleVideo: "" };
+    }
+    
+    // Process files from disk (same as streaming mode)
+    const folderName = sanitizeName(productName);
+    const r2Prefix = `${CONFIG.category}/${folderName}`;
+    
+    const videos = gdriveResult.files.filter(f => getFileType(f.name) === "video").sort((a, b) => a.name.localeCompare(b.name));
+    const images = gdriveResult.files.filter(f => getFileType(f.name) === "image").sort((a, b) => a.name.localeCompare(b.name));
+    const orderedFiles = [...videos, ...images];
+    
+    const videoUrls: string[] = [];
+    const imageUrls: string[] = [];
+    let titleImage = "";
+    let titleVideo = "";
+    
+    for (let i = 0; i < orderedFiles.length; i++) {
+      const file = orderedFiles[i];
+      const fileType = getFileType(file.name);
+      const originalSize = (file.size / 1024 / 1024).toFixed(1);
+      
+      console.log(`   [${i + 1}/${orderedFiles.length}] ${file.name} (${originalSize}MB)`);
+      
+      try {
+        let processedBuffer = readFileSync(file.path);
+        let processedFilename = file.name;
+        
+        if (fileType === "video" && CONFIG.media.convertVideosToMp4) {
+          try {
+            const result = await processVideo(processedBuffer, file.name);
+            processedBuffer = result.buffer;
+            processedFilename = result.filename;
+          } catch (e: any) {
+            console.log(`      Video processing failed, using original`);
+          }
+        }
+        
+        if (fileType === "image") {
+          try {
+            processedBuffer = await compressImage(processedBuffer, file.name);
+          } catch {}
+        }
+        
+        const safeName = sanitizeName(processedFilename);
+        const r2Key = `${r2Prefix}/${safeName}`;
+        
+        const finalSize = (processedBuffer.length / 1024 / 1024).toFixed(1);
+        process.stdout.write(`      Uploading (${finalSize}MB)...`);
+        const cdnUrl = await uploadToR2(processedBuffer, r2Key, getMimeType(processedFilename));
+        console.log(` done`);
+        
+        if (fileType === "video") {
+          videoUrls.push(cdnUrl);
+          if (!titleVideo) titleVideo = cdnUrl;
+        } else {
+          imageUrls.push(cdnUrl);
+          if (!titleImage) titleImage = cdnUrl;
+        }
+      } catch (error: any) {
+        logError("Upload", error, { fileName: file.name, folder: folderName, boatId });
+        console.log(`      FAILED`);
+      }
+    }
+    
+    cleanupGDriveTempDir(gdriveResult.tempDir);
+    
+    const galleryContent = [...videoUrls, ...imageUrls];
+    console.log(`   Done: ${videoUrls.length} videos, ${imageUrls.length} images`);
+    return { galleryContent, titleImage, titleVideo };
+  }
+  
+  // =========================================================================
+  // DROPBOX HANDLING (existing code)
+  // =========================================================================
   
   // Check for broken Dropbox links first
   if (hasBrokenLink(boatId)) {
     console.log(`   SKIPPED - Broken Dropbox link (needs client follow-up)`);
-    logError("BrokenLink", new Error("Dropbox returns HTML instead of ZIP"), { dropboxUrl, productName, boatId });
+    logError("BrokenLink", new Error("Dropbox returns HTML instead of ZIP"), { folderUrl, productName, boatId });
     return null;
   }
   
@@ -307,10 +413,10 @@ async function migrateDropboxFolder(dropboxUrl: string, productName: string, boa
     // =========================================================================
     console.log(`   Using STREAMING download (${streamingInfo.reason})`);
     
-    const streamResult = await streamingDropboxMigration(dropboxUrl, boatId, productName);
+    const streamResult = await streamingDropboxMigration(folderUrl, boatId, productName);
     
     if (!streamResult.success) {
-      logError("StreamingDownload", new Error(streamResult.error || "Unknown error"), { dropboxUrl, productName, boatId });
+      logError("StreamingDownload", new Error(streamResult.error || "Unknown error"), { folderUrl, productName, boatId });
       return null;
     }
     
@@ -685,7 +791,7 @@ async function main() {
     }
     
     try {
-      const migrationResult = await migrateDropboxFolder(product.dropboxLink, product.name, product.id);
+      const migrationResult = await migrateMediaFolder(product.dropboxLink, product.name, product.id);
       
       if (migrationResult) {
         const isValidMediaUrl = (url: string): boolean => {

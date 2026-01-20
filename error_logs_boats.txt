@@ -97,3 +97,17 @@ mapname:  conversion of  failed
   "productName": "68FT AZIMUT",
   "boatId": "21"
 }
+
+[2026-01-20T09:56:16.649Z] GDriveDownload: No media files found in Google Drive folder (folder may not be public or is empty)
+{
+  "folderUrl": "https://drive.google.com/drive/folders/1_n1YpNw3E2RtFqWJ5aLffKi1pSv1N_Fn?usp=sharing",
+  "productName": "27FT FOUR WINNS",
+  "boatId": "78"
+}
+
+[2026-01-20T10:03:36.661Z] GDriveDownload: No media files found in Google Drive folder (folder may not be public or is empty)
+{
+  "folderUrl": "https://drive.google.com/drive/mobile/folders/1InXVYI5q3y51BsGjH6hMEK9CGhCZMNcV",
+  "productName": "52FT \"ARROW' FORMULA",
+  "boatId": "59"
+}
