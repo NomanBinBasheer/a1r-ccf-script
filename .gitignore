@@ -14,6 +14,11 @@ npm-debug.log*
 # Temporary files
 temp_*
 *.tmp
+.temp-downloads/
+
+# Backups
+backups/
+*.backup*
 
 # OS files
 .DS_Store
