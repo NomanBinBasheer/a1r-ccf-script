@@ -24,7 +24,8 @@ const CONFIG = {
   LARGE_FILE_BOAT_IDS: ['6', '12', '21', '37', '57', '63'],
   
   // Boats with broken Dropbox links (skip these)
-  BROKEN_LINK_BOAT_IDS: ['28', '30'],
+  // Note: 28 and 30 have been fixed by client - removed from list
+  BROKEN_LINK_BOAT_IDS: [] as string[],
   
   // Size threshold for using streaming (in MB)
   STREAMING_THRESHOLD_MB: 500,

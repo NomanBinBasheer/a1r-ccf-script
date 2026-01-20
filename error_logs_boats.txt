@@ -116,3 +116,17 @@ mapname:  conversion of  failed
 {
   "product": "55FT CRUISER"
 }
+
+[2026-01-20T13:42:22.877Z] Extract: ADM-ZIP: Invalid or unsupported zip format. No END header found
+{
+  "folderUrl": "https://www.dropbox.com/scl/fo/fs4e7jtx4ke06mj88kitz/ACsE90PLsl5ndLqhgxGMExY?rlkey=r2do41nexhil6zookqopu2vv2&st=72qlr9a1&dl=0",
+  "productName": "80FT AZIMUT",
+  "boatId": "28"
+}
+
+[2026-01-20T13:43:26.504Z] Extract: ADM-ZIP: Invalid or unsupported zip format. No END header found
+{
+  "folderUrl": "https://www.dropbox.com/scl/fo/83sakg8nywd447r2y4ar0/AC_rPixCFM9i6K5TQyThA9Y?rlkey=m90s5uccjlx7yd4t80hc753os&st=nt9tmgok&dl=0",
+  "productName": "51ft Leopard",
+  "boatId": "30"
+}
