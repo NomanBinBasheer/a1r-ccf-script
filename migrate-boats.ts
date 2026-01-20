@@ -502,10 +502,12 @@ async function migrateMediaFolder(folderUrl: string, productName: string, boatId
     console.log(`   Downloading ZIP (memory mode)...`);
     let zipBuffer: Buffer;
     try {
-      zipBuffer = await downloadFolderAsZip(dropboxUrl);
+      // Clean URL - remove trailing pipe or other invalid characters
+      const cleanUrl = folderUrl.replace(/\|$/, '').trim();
+      zipBuffer = await downloadFolderAsZip(cleanUrl);
       console.log(`   Downloaded ${(zipBuffer.length / 1024 / 1024).toFixed(1)} MB`);
     } catch (error: any) {
-      logError("Download", error, { dropboxUrl, productName, boatId });
+      logError("Download", error, { folderUrl, productName, boatId });
       return null;
     }
     
@@ -515,7 +517,7 @@ async function migrateMediaFolder(folderUrl: string, productName: string, boatId
       files = extractZip(zipBuffer);
       console.log(`   Found ${files.length} media files`);
     } catch (error: any) {
-      logError("Extract", error, { dropboxUrl, productName, boatId });
+      logError("Extract", error, { folderUrl, productName, boatId });
       return null;
     }
     

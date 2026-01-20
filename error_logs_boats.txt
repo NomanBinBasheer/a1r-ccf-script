@@ -111,3 +111,8 @@ mapname:  conversion of  failed
   "productName": "52FT \"ARROW' FORMULA",
   "boatId": "59"
 }
+
+[2026-01-20T12:18:10.391Z] Migration: dropboxUrl is not defined
+{
+  "product": "55FT CRUISER"
+}
