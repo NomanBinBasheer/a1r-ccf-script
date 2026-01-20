@@ -283,46 +283,68 @@ export async function extractZipToDir(zipPath: string, outputDir: string): Promi
   }
   
   return new Promise((resolve) => {
+    // Try unzip first
     try {
       // Use system unzip command (more memory efficient)
       // UNZIP_DISABLE_ZIPBOMB_DETECTION=TRUE handles Dropbox's nested folder structure
-      execSync(`UNZIP_DISABLE_ZIPBOMB_DETECTION=TRUE unzip -o -q "${zipPath}" -d "${outputDir}"`, {
+      execSync(`UNZIP_DISABLE_ZIPBOMB_DETECTION=TRUE unzip -o -q "${zipPath}" -d "${outputDir}" 2>/dev/null || true`, {
         maxBuffer: 10 * 1024 * 1024, // 10MB buffer for output
         timeout: 15 * 60 * 1000, // 15 minute timeout for large files
       });
-      
-      // Get list of extracted files
-      const files = getMediaFiles(outputDir);
-      
+    } catch (e) {
+      // Ignore errors - we'll check if files were extracted
+    }
+    
+    // Check if files were extracted despite any errors
+    const files = getMediaFiles(outputDir);
+    
+    if (files.length > 0) {
       console.log(`   [Extract] Found ${files.length} media files`);
-      
       resolve({
         success: true,
         files,
       });
+      return;
+    }
+    
+    // If no files, try Python's zipfile as fallback
+    try {
+      console.log(`   [Extract] No files from unzip, trying Python zipfile...`);
+      const pythonScript = `
+import zipfile
+import os
+import sys
+
+zip_path = sys.argv[1]
+output_dir = sys.argv[2]
+
+with zipfile.ZipFile(zip_path, 'r') as zf:
+    for member in zf.namelist():
+        try:
+            zf.extract(member, output_dir)
+        except Exception as e:
+            print(f"Skipped: {member} - {e}", file=sys.stderr)
+print("Extraction complete")
+`;
+      execSync(`python3 -c '${pythonScript}' "${zipPath}" "${outputDir}"`, {
+        maxBuffer: 10 * 1024 * 1024,
+        timeout: 20 * 60 * 1000,
+      });
       
-    } catch (error: any) {
-      // Fallback: try 7z if unzip fails (handles more formats)
-      try {
-        console.log(`   [Extract] unzip failed, trying 7z...`);
-        execSync(`7z x -y -o"${outputDir}" "${zipPath}"`, {
-          maxBuffer: 10 * 1024 * 1024,
-          timeout: 15 * 60 * 1000,
-        });
-        
-        const files = getMediaFiles(outputDir);
-        resolve({
-          success: true,
-          files,
-        });
-        
-      } catch (fallbackError: any) {
-        resolve({
-          success: false,
-          files: [],
-          error: `Extraction failed: ${error.message}`,
-        });
-      }
+      const filesAfterPython = getMediaFiles(outputDir);
+      console.log(`   [Extract] Found ${filesAfterPython.length} media files`);
+      resolve({
+        success: filesAfterPython.length > 0,
+        files: filesAfterPython,
+        error: filesAfterPython.length === 0 ? 'No media files extracted' : undefined,
+      });
+      
+    } catch (fallbackError: any) {
+      resolve({
+        success: false,
+        files: [],
+        error: `Extraction failed: ${fallbackError.message}`,
+      });
     }
   });
 }
