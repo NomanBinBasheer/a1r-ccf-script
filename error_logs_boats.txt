@@ -1,0 +1,60 @@
+
+[2026-01-19T21:20:42.341Z] Extract: Attempt to access memory outside buffer bounds
+{
+  "dropboxUrl": "https://www.dropbox.com/scl/fo/4ke66puh1hkdhv2nizn0g/AGbCTrT_X9boEuZtfmdD_Xg?dl=0&e=1&rlkey=qqzpnjolczug35ky10ouellbu&st=hnb5e1s2",
+  "productName": "68FT AZIMUT"
+}
+
+[2026-01-19T21:30:12.688Z] Extract: ADM-ZIP: Invalid or unsupported zip format. No END header found
+{
+  "dropboxUrl": "https://www.dropbox.com/scl/fo/fs4e7jtx4ke06mj88kitz/ACsE90PLsl5ndLqhgxGMExY?rlkey=r2do41nexhil6zookqopu2vv2&st=72qlr9a1&dl=0",
+  "productName": "80FT AZIMUT"
+}
+
+[2026-01-19T21:30:13.324Z] Extract: ADM-ZIP: Invalid or unsupported zip format. No END header found
+{
+  "dropboxUrl": "https://www.dropbox.com/scl/fo/83sakg8nywd447r2y4ar0/AC_rPixCFM9i6K5TQyThA9Y?rlkey=m90s5uccjlx7yd4t80hc753os&st=nt9tmgok&dl=0",
+  "productName": "51ft Leopard"
+}
+
+[2026-01-19T22:30:25.220Z] Extract: ADM-ZIP: Invalid or unsupported zip format. No END header found
+{
+  "dropboxUrl": "https://www.dropbox.com/scl/fo/ixwqltfrlxdtfmaosvvvl/AFNXlMnW1npDL4RlvKeMZ6Q?rlkey=owpzfe1plfdja75htm6657taw&st=o5fy9ono&dl=0|",
+  "productName": "55FT CRUISER"
+}
+
+[2026-01-19T22:34:59.904Z] Extract: ADM-ZIP: Invalid or unsupported zip format. No END header found
+{
+  "dropboxUrl": "https://drive.google.com/drive/folders/1zAScbzWszWbsJEJWq0iFi72azoQhdd3t?usp=share_link",
+  "productName": "52’ Beneteau Flybridge Venetian"
+}
+
+[2026-01-19T22:54:03.747Z] Extract: ADM-ZIP: Invalid or unsupported zip format. No END header found
+{
+  "dropboxUrl": "https://drive.google.com/drive/mobile/folders/1InXVYI5q3y51BsGjH6hMEK9CGhCZMNcV",
+  "productName": "52FT \"ARROW' FORMULA"
+}
+
+[2026-01-19T23:19:10.257Z] Extract: ADM-ZIP: Invalid or unsupported zip format. No END header found
+{
+  "dropboxUrl": "https://drive.google.com/drive/folders/1xEvHORD_PfJxUzQkr4oMu8KWlBztCFIs",
+  "productName": "105FT AQUA with Jacuzzi"
+}
+
+[2026-01-19T23:19:11.123Z] Extract: ADM-ZIP: Invalid or unsupported zip format. No END header found
+{
+  "dropboxUrl": "https://drive.google.com/drive/folders/1Qvmr_UW1u0lfBELkDlClBYor0BNUu4Kk",
+  "productName": "65FT AZIMUT NEW"
+}
+
+[2026-01-19T23:21:32.950Z] Extract: ADM-ZIP: Invalid or unsupported zip format. No END header found
+{
+  "dropboxUrl": "https://drive.google.com/drive/folders/1GzrmmjCEYlrrtGUwLdnhcy6MtBEHhWi9",
+  "productName": "40ft Sea Ray Sedan Bridge (NEW)"
+}
+
+[2026-01-19T23:22:34.570Z] Extract: ADM-ZIP: Invalid or unsupported zip format. No END header found
+{
+  "dropboxUrl": "https://drive.google.com/drive/folders/1_n1YpNw3E2RtFqWJ5aLffKi1pSv1N_Fn?usp=sharing",
+  "productName": "27FT FOUR WINNS"
+}
